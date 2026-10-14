@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Twin Time">
+<meta name="theme-color" content="#f4f1ea">
+<title>Twin Time</title>
+<style>
+  :root {
+    --bg: #f4f1ea; --card: #ffffff; --ink: #1f2a24; --muted: #6b746e; --line: #e4dfd3; --chip: #ebe7dc;
+    --accent: #2f7d5b; --accent-ink: #ffffff;
+    --need: #d9480f; --need-bg: #fdeee6; --maybe: #b7791f; --maybe-bg: #fbf1dc; --ok: #2b8a3e; --ok-bg: #e4f4e8; --offer: #3b6fd4; --offer-bg: #e6edfb;
+    --appt: #7c4dcc; --appt-bg: #efe8fb;
+    --shadow: 0 1px 2px rgba(0,0,0,.05), 0 6px 16px rgba(40,50,30,.07);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151a17; --card: #1f2622; --ink: #eef2ee; --muted: #9aa59d; --line: #2c3530; --chip: #2a332e;
+      --accent: #58c492; --accent-ink: #06150e;
+      --need: #ff8a5c; --need-bg: #3a2218; --maybe: #f0b84f; --maybe-bg: #352912; --ok: #69db7c; --ok-bg: #1b3022; --offer: #7ea6ff; --offer-bg: #1c2740; --appt: #b79cff; --appt-bg: #2b2342;
+      --shadow: 0 1px 2px rgba(0,0,0,.4);
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--ink); font: 16px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: env(safe-area-inset-top) 16px calc(120px + env(safe-area-inset-bottom)); }
+  .wrap { max-width: 560px; margin: 0 auto; }
+  header { padding: 20px 0 8px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  h1 { margin: 0; font: 700 28px/1.1 ui-serif, Georgia, serif; letter-spacing: -.01em; }
+  h1 span { color: var(--accent); }
+  .who { display: flex; align-items: center; gap: 8px; border: 0; background: var(--chip); color: var(--ink); font: inherit; font-size: 14px; font-weight: 600; padding: 5px 12px 5px 5px; border-radius: 999px; cursor: pointer; }
+  .av { width: 26px; height: 26px; border-radius: 50%; display: inline-grid; place-items: center; color: #fff; font-size: 12px; font-weight: 700; flex: none; }
+  .banner { background: var(--chip); border-radius: 12px; padding: 10px 14px; font-size: 14px; margin: 6px 0 10px; display: none; }
+  .banner.show { display: block; }
+
+  .tabs { display: flex; gap: 6px; background: var(--chip); padding: 4px; border-radius: 14px; margin: 8px 0 14px; }
+  .tabs button { flex: 1; border: 0; background: none; color: var(--muted); font: inherit; font-weight: 600; font-size: 15px; padding: 9px; border-radius: 10px; cursor: pointer; }
+  .tabs button.on { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
+
+
+  .pill { font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+  .pill.need { background: var(--need-bg); color: var(--need); } .pill.maybe { background: var(--maybe-bg); color: var(--maybe); }
+  .pill.ok { background: var(--ok-bg); color: var(--ok); } .pill.offer { background: var(--offer-bg); color: var(--offer); }
+  .avs { display: flex; } .avs .av { margin-right: -6px; border: 2px solid var(--card); width: 26px; height: 26px; }
+  .pill.appt { background: var(--appt-bg); color: var(--appt); } .shift.s-appt { border-left-color: var(--appt); }
+
+  /* calendar */
+  .calbar { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; }
+  .calbar .mo { flex: 1; font: 700 18px/1.2 ui-serif, Georgia, serif; }
+  .calbar button { border: 0; background: var(--chip); color: var(--ink); font: inherit; font-weight: 700; border-radius: 10px; padding: 7px 12px; cursor: pointer; }
+  .people { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 10px; scrollbar-width: none; }
+  .people::-webkit-scrollbar { display: none; }
+  .pchip { flex: none; display: inline-flex; align-items: center; gap: 6px; border: 0; background: var(--chip); color: var(--ink); font: inherit; font-size: 14px; padding: 5px 12px 5px 6px; border-radius: 999px; cursor: pointer; }
+  .pchip.all { padding-left: 12px; } .pchip .av { width: 22px; height: 22px; font-size: 11px; }
+  .pchip.on { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+  .cal { margin: 0 -10px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: var(--card); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; }
+  .wd { display: flex; flex-direction: column; gap: 5px; padding: 0 5px 8px; min-height: 190px; border-left: 1px solid var(--line); border-top: 1px solid var(--line); min-width: 0; cursor: pointer; }
+  .wd:nth-child(4n+1) { border-left: 0; } .wd:nth-child(-n+4) { border-top: 0; }
+  .mm { border-left: 1px solid var(--line); border-top: 1px solid var(--line); display: grid; place-items: center; padding: 10px; min-height: 190px; } .mm svg { width: 100%; max-width: 120px; }
+  .wd.today { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .wd.gone .ev { opacity: .6; }
+  .dh { text-align: center; padding: 8px 0 6px; cursor: default; }
+  .dh .dw { display: block; font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .dh .dn { display: inline-grid; place-items: center; min-width: 28px; height: 28px; border-radius: 14px; font-size: 16px; font-weight: 700; }
+  .wd.today .dh .dn { background: var(--accent); color: var(--accent-ink); }
+  .ev { display: block; width: 100%; border: 0; border-left: 4px solid; border-radius: 8px; padding: 5px 6px; text-align: left; font: inherit; color: var(--ink); cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,.1); min-width: 0; }
+  .ev b { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; word-break: break-word; font-size: 13px; line-height: 1.2; }
+  .ev .nt { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; word-break: break-word; font-size: 11px; line-height: 1.2; margin-top: 2px; }
+  .ev .tm { display: block; font-size: 10.5px; opacity: .7; margin-top: 3px; line-height: 1.15; font-weight: 600; }
+  .ev.b-need { background: var(--need-bg); border-color: var(--need); } .ev.b-maybe { background: var(--maybe-bg); border-color: var(--maybe); } .ev.b-ok { background: var(--ok-bg); border-color: var(--ok); } .ev.b-offer { background: var(--offer-bg); border-color: var(--offer); } .ev.b-appt { background: var(--appt-bg); border-color: var(--appt); }
+  .need-form { display: flex; gap: 8px; margin-top: 4px; }
+  .need-form input { flex: 1; min-width: 0; font: inherit; font-size: 16px; font-weight: 600; padding: 13px 14px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--card); color: var(--ink); outline: none; }
+  .need-form input:focus { border-color: var(--accent); }
+  .need-add { border: 0; border-radius: 14px; padding: 0 22px; font: inherit; font-weight: 700; background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+  .need-list { margin-top: 10px; }
+  .need-item { display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 16px; margin-bottom: 8px; border-radius: 14px; background: var(--card); box-shadow: var(--shadow); font-weight: 600; }
+  .need-item span { flex: 1; overflow-wrap: anywhere; }
+  .need-remove { flex: none; width: 34px; height: 34px; border: 0; border-radius: 50%; background: var(--chip); color: var(--muted); font-size: 14px; font-weight: 700; cursor: pointer; }
+  .need-remove:active { color: var(--need); }
+  .chk { display: flex !important; align-items: center; gap: 10px; text-transform: none !important; letter-spacing: 0 !important; font-size: 16px !important; color: var(--ink) !important; font-weight: 600 !important; margin-top: 14px !important; }
+  .chk input { width: 20px; height: 20px; accent-color: var(--accent); }
+  select.inp { appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 20px) 50%, calc(100% - 14px) 50%; background-size: 6px 6px; background-repeat: no-repeat; }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin: 10px 2px 0; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  .kinds { display: flex; gap: 6px; background: var(--chip); padding: 4px; border-radius: 12px; margin: 14px 0 2px; }
+  .kinds button { flex: 1; border: 0; background: none; color: var(--muted); font: inherit; font-weight: 700; font-size: 14px; padding: 8px 4px; border-radius: 9px; cursor: pointer; }
+  .kinds button.on { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
+  .empty { text-align: center; color: var(--muted); padding: 40px 20px; }
+  .empty b { display: block; color: var(--ink); font: 600 20px ui-serif, Georgia, serif; margin-bottom: 6px; }
+  .link { background: none; border: 0; color: var(--accent); font: inherit; font-weight: 600; font-size: 14px; cursor: pointer; padding: 8px 4px; }
+
+  .fab { position: fixed; right: 18px; bottom: calc(22px + env(safe-area-inset-bottom)); z-index: 10; border: 0; background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 700; font-size: 16px; padding: 15px 22px; border-radius: 999px; box-shadow: 0 6px 20px rgba(0,0,0,.28); cursor: pointer; }
+
+  .sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 21; background: var(--bg); border-radius: 22px 22px 0 0; max-height: 92vh; overflow: auto; padding: 20px 18px calc(24px + env(safe-area-inset-bottom)); transform: translateY(105%); transition: transform .25s ease; }
+  .sheet.show { transform: none; } .sheet .inner { max-width: 560px; margin: 0 auto; }
+  .sheet h2 { margin: 0 0 2px; font: 700 24px/1.2 ui-serif, Georgia, serif; }
+  .sheet .sub { color: var(--muted); margin-bottom: 4px; }
+  .sheet label { display: block; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 16px 0 7px; font-weight: 700; }
+  .inp { width: 100%; font: inherit; padding: 11px 12px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--card); color: var(--ink); }
+  textarea.inp { min-height: 64px; resize: vertical; }
+  .two { display: flex; gap: 10px; } .two > div { flex: 1; min-width: 0; }
+  .tog { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tog button { font: inherit; font-size: 14px; border: 1.5px solid var(--line); background: var(--card); color: var(--ink); border-radius: 999px; padding: 6px 13px; cursor: pointer; }
+  .btn { width: 100%; font: inherit; font-weight: 700; padding: 14px; border-radius: 13px; border: 0; cursor: pointer; background: var(--chip); color: var(--ink); margin-top: 10px; display: block; text-align: center; text-decoration: none; }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); } .btn.danger { color: var(--need); }
+  .btn.wa { background: #25d366; color: #06310f; }
+  .btn.sm { width: auto; display: inline-block; padding: 8px 14px; margin: 0; font-size: 14px; }
+  .person { display: flex; align-items: center; gap: 10px; background: var(--card); border-radius: 12px; padding: 8px 10px; margin-bottom: 8px; }
+  .person .nm { flex: 1; font-weight: 600; }
+  .note { background: var(--card); border-radius: 12px; padding: 10px 12px; margin-top: 12px; font-size: 15px; white-space: pre-wrap; }
+  .fine { color: var(--muted); font-size: 12.5px; margin-top: 12px; }
+  .err { color: var(--need); font-size: 14px; margin-top: 8px; min-height: 1em; }
+  .pickname { display: grid; gap: 8px; margin-top: 12px; }
+  .pickname button { display: flex; align-items: center; gap: 12px; font: inherit; font-weight: 600; font-size: 17px; background: var(--card); color: var(--ink); border: 0; border-radius: 14px; padding: 11px 14px; cursor: pointer; box-shadow: var(--shadow); text-align: left; }
+  .pickname .tag { margin-left: auto; font-size: 12px; color: var(--muted); font-weight: 600; }
+  #toast { position: fixed; left: 50%; bottom: calc(92px + env(safe-area-inset-bottom)); transform: translate(-50%, 30px); background: var(--ink); color: var(--bg); padding: 11px 18px; border-radius: 999px; font-size: 14px; opacity: 0; transition: .25s; pointer-events: none; z-index: 40; max-width: 90vw; }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Twin <span>Time</span></h1>
+    <button class="who" id="whoBtn" style="display:none"></button>
+  </header>
+  <div class="banner" id="banner"></div>
+  <div class="tabs" id="tabs">
+    <button data-t="cal" class="on">Calendar</button>
+    <button data-t="needs">🛒 Things we need</button>
+  </div>
+  <div id="calView">
+    <div class="calbar"><button id="calPrev" aria-label="Previous week">‹</button><div class="mo" id="calMonth"></div><button id="calToday">Today</button><button id="calNext" aria-label="Next week">›</button></div>
+    <div class="people" id="people"></div>
+    <div class="cal" id="cal"></div>
+    <div class="legend"><span><i style="background:var(--need)"></i>Needs booking in</span><span><i style="background:var(--maybe)"></i>Someone can help</span><span><i style="background:var(--ok)"></i>Confirmed</span><span><i style="background:var(--offer)"></i>Offered</span><span><i style="background:var(--appt)"></i>Appointment</span></div>
+  </div>
+  <div id="needsView" style="display:none">
+    <form id="needForm" class="need-form" autocomplete="off"><input type="text" id="needInput" placeholder="Add an item…" maxlength="120" aria-label="New item" enterkeyhint="done"><button type="submit" class="need-add">Add</button></form>
+    <div class="fine" id="needsStatus"></div>
+    <div class="need-list" id="needsList"></div>
+    <div class="fine" id="needsCount"></div>
+  </div>
+</div>
+
+<button class="fab" id="fab" style="display:none"></button>
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet"><div class="inner" id="sheetBody"></div></div>
+<div id="toast"></div>
+
+<script>
+/* ================= SETTINGS ================= */
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwrp-pBo6D12a_Tk275BYgiDwTecC__wEIA3u5S4CZ-uGiQhSnOUqML_zlE8gfIODQ8wQ/exec';                       // your Apps Script web app URL (empty = this phone only, for trying it out)
+const PARENTS = ['Ollie', 'Katie'];          // names that can confirm helpers and post shifts. Spelling must match when people pick their name
+const APPT_LABELS = ['Health visitor', 'GP', 'Jabs', 'Hospital', 'Weigh-in', 'Baby group'];   // quick picks for appointments
+/* ============================================ */
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const splitList = s => String(s || '').split('|').map(x => x.trim()).filter(Boolean);
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const eq = (a, b) => String(a).toLowerCase() === String(b).toLowerCase();
+
+let shifts = [], people = [], me = '', tab = 'cal', openId = null, openDate = null, opCount = 0;
+const LS = { me: 'rota.me', data: 'rota.data' };
+try { me = localStorage.getItem(LS.me) || ''; } catch (e) {}
+const isParent = n => PARENTS.some(p => eq(p, n));
+
+let toastTimer;
+function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2600); }
+
+/* ---------------- data ---------------- */
+// Sheets can turn "10:00" into "10:00:00" or a date into dd/mm/yyyy if someone edits a cell by hand, so tidy both
+const normTime = v => { const m = String(v || '').match(/(\d{1,2}):(\d{2})/); return m ? pad(+m[1]) + ':' + m[2] : String(v || ''); };
+const normDate = v => { v = String(v || '').trim(); const m = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m ? `${m[3]}-${pad(+m[2])}-${pad(+m[1])}` : v.slice(0, 10); };
+const rowToShift = r => ({ id: r[0], date: normDate(r[1]), start: normTime(r[2]), end: normTime(r[3]), what: r[4], notes: r[5], kind: r[6] || 'need', status: r[7] || 'open', helper: r[8], volunteers: splitList(r[9]), by: r[10], created: r[11],
+  repeat: r[12] || '', until: r[13] ? normDate(r[13]) : '', skip: splitList(r[14]).map(normDate), allday: String(r[15] || '') === '1' });
+const shiftFields = s => ({ id: s.id, date: s.date, start: s.start, end: s.end, what: s.what || '', notes: s.notes || '', kind: s.kind, status: s.status, helper: s.helper || '', volunteers: (s.volunteers || []).join('|'), by: s.by || '', created: s.created || ymd(new Date()), repeat: s.repeat || '', until: s.until || '', skip: (s.skip || []).join('|'), allday: s.allday ? '1' : '' });
+function saveLocal() { try { localStorage.setItem(LS.data, JSON.stringify({ shifts, people, needs })); } catch (e) {} }
+function loadLocal() { try { const d = JSON.parse(localStorage.getItem(LS.data) || '{}'); shifts = d.shifts || []; people = d.people || []; needs = d.needs || []; } catch (e) {} }
+
+async function post(body) {
+  if (!SCRIPT_URL) { saveLocal(); return; }
+  opCount++;
+  try { await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) }); }
+  catch (e) { toast("Couldn't reach the sheet. Check your connection."); }
+  clearTimeout(reloadTimer); reloadTimer = setTimeout(() => load(true), 2000);
+}
+let reloadTimer;
+async function load(quiet) {
+  if (!SCRIPT_URL) { loadLocal(); render(); return; }
+  const started = opCount;
+  try {
+    const j = await (await fetch(SCRIPT_URL, { redirect: 'follow' })).json();
+    if (!j || !Array.isArray(j.shifts)) throw new Error('bad');
+    if (opCount !== started) return;
+    shifts = j.shifts.slice(1).filter(r => r[0] && r[1]).map(rowToShift);
+    people = (j.people || []).slice(1).map(r => r[0]).filter(Boolean);
+    if (Array.isArray(j.needs)) needs = j.needs.slice(1).filter(r => r[0] && r[1]).map(r => ({ id: String(r[0]), item: String(r[1]) }));
+    saveLocal(); $('banner').classList.remove('show');
+  } catch (e) {
+    if (!shifts.length) loadLocal();
+    $('banner').textContent = "Couldn't reach the shared sheet. Showing what's saved on this phone."; $('banner').classList.add('show');
+  }
+  render();
+  if (openId && !$('sheet').classList.contains('editing')) { if (findOcc(openId, openDate)) renderSheet(openId, openDate); else closeSheet(); }
+}
+
+/* ---------------- time helpers ---------------- */
+const startDT = s => new Date(`${s.date}T${s.start}:00`);
+const endDT = s => { const e = new Date(`${s.date}T${s.end}:00`); if (s.end <= s.start) e.setDate(e.getDate() + 1); return e; };
+function dayLabel(d) {
+  const t = ymd(new Date()), tm = ymd(new Date(Date.now() + 864e5));
+  const nice = new Date(d + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
+  return d === t ? `Today · ${nice}` : d === tm ? `Tomorrow · ${nice}` : nice;
+}
+const timeRange = s => s.allday ? 'All day' : `${s.start}–${s.end}${s.end <= s.start ? ' (+1 day)' : ''}`;
+
+/* ---------------- repeats ---------------- */
+// repeat codes: '' (once) | 'daily' | 'monthly' | 'weekly:1,3' | 'biweekly:1'   (days: 0 = Sunday ... 6 = Saturday)
+const DOW = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const parseRepeat = r => { if (!r) return null; if (r === 'daily' || r === 'monthly') return { t: r }; const m = String(r).match(/^(weekly|biweekly):([\d,]+)$/); return m ? { t: m[1], days: m[2].split(',').map(Number) } : null; };
+const dateOf = d => new Date(d + 'T12:00:00');                    // noon, so clock changes can't shift the day
+const dayDiff = (a, b) => Math.round((dateOf(b) - dateOf(a)) / 864e5);
+const addDays = (d, n) => { const x = dateOf(d); x.setDate(x.getDate() + n); return ymd(x); };
+const weekIdx = d => Math.floor(dayDiff('2000-01-03', d) / 7);     // 3 Jan 2000 was a Monday
+function occursOn(s, d) {
+  if (d < s.date || (s.until && d > s.until) || s.skip.includes(d)) return false;
+  const r = parseRepeat(s.repeat); if (!r) return d === s.date;
+  if (r.t === 'daily') return true;
+  if (r.t === 'monthly') { const dt = dateOf(d), dim = new Date(dt.getFullYear(), dt.getMonth() + 1, 0).getDate(); return +d.slice(8) === Math.min(+s.date.slice(8), dim); }
+  if (!r.days.includes(dateOf(d).getDay())) return false;
+  return r.t === 'weekly' || (((weekIdx(d) - weekIdx(s.date)) % 2) + 2) % 2 === 0;
+}
+function firstOnOrAfter(date, repeat) {          // the first real occurrence of a weekly rule on/after the chosen date
+  const r = parseRepeat(repeat); if (!r || !r.days) return date;
+  for (let i = 0; i < 14; i++) { const d = addDays(date, i); if (r.days.includes(dateOf(d).getDay())) return d; }
+  return date;
+}
+function repeatText(s) {
+  const r = parseRepeat(s.repeat); if (!r) return '';
+  let t;
+  if (r.t === 'daily') t = 'every day';
+  else if (r.t === 'monthly') { const n = +s.date.slice(8), sfx = (n % 100 >= 11 && n % 100 <= 13) ? 'th' : ({1:'st',2:'nd',3:'rd'}[n % 10] || 'th'); t = `monthly on the ${n}${sfx}`; }
+  else {
+    const days = [...r.days].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7));
+    const wk = days.length === 5 && !days.includes(0) && !days.includes(6);
+    const names = wk ? 'weekday' : days.length === 1 ? DOW[days[0]] : days.map(d => DOW[d].slice(0, 3)).join(', ');
+    t = r.t === 'biweekly' ? `every other ${names}` : `every ${names}`;
+  }
+  return t + (s.until ? ` until ${dateOf(s.until).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : '');
+}
+// turn series into the individual days they land on, for a range
+function expand(from, to) {
+  const out = [];
+  shifts.forEach(s => {
+    if (!parseRepeat(s.repeat)) { if (s.date >= from && s.date <= to) out.push({ ...s, base: s }); return; }
+    const last = s.until && s.until < to ? s.until : to;
+    for (let d = s.date > from ? s.date : from; d <= last; d = addDays(d, 1)) if (occursOn(s, d)) out.push({ ...s, date: d, occ: true, base: s });
+  });
+  return out;
+}
+let occs = [];
+function findOcc(id, date) {
+  const s = shifts.find(x => x.id === id); if (!s) return null;
+  if (!parseRepeat(s.repeat)) return { ...s, base: s };
+  const d = date || s.date; return occursOn(s, d) ? { ...s, date: d, occ: true, base: s } : null;
+}
+
+/* ---------------- people ---------------- */
+const hue = n => { let h = 0; for (const c of String(n).toLowerCase()) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
+const avatar = n => `<span class="av" style="background:hsl(${hue(n)} 42% 42%)" title="${esc(n)}">${esc(String(n).trim().charAt(0).toUpperCase())}</span>`;
+function everyone() {
+  const seen = new Map();
+  [...PARENTS, ...people, ...shifts.flatMap(s => [s.by, s.helper, ...s.volunteers])].filter(Boolean).forEach(n => { if (!seen.has(n.toLowerCase())) seen.set(n.toLowerCase(), n); });
+  return [...seen.values()];
+}
+
+/* ---------------- status ---------------- */
+function status(s) {
+  if (s.kind === 'appt') return { cls: 'appt', text: s.volunteers.length ? `${s.volunteers.length} going` : 'Appointment', bar: 's-appt', short: s.volunteers.length ? s.volunteers.slice(0, 2).join(', ') + (s.volunteers.length > 2 ? '…' : '') + ' going' : 'Appointment', blk: 'b-appt' };
+  if (s.status === 'confirmed') return { cls: 'ok', text: `✓ ${s.helper}`, bar: 's-ok', short: `✓ ${s.helper}`, blk: 'b-ok' };
+  if (s.kind === 'offer') return { cls: 'offer', text: `${s.by || s.volunteers[0] || 'Someone'} offered`, bar: 's-offer', short: `${s.by || s.volunteers[0] || 'Someone'} offered`, blk: 'b-offer' };
+  if (s.volunteers.length) return { cls: 'maybe', text: `${s.volunteers.length} can help`, bar: 's-maybe', short: `${s.volunteers.length} can help`, blk: 'b-maybe' };
+  return { cls: 'need', text: 'Needs booking in', bar: 's-need', short: 'Book in', blk: 'b-need' };
+}
+const needsParent = s => s.kind !== 'appt' && s.status === 'open' && (s.kind === 'offer' || s.volunteers.length);   // parent action: confirm someone
+const uncovered = s => s.kind !== 'appt' && s.status === 'open' && s.kind === 'need' && !s.volunteers.length;
+const involves = (s, n) => eq(s.by, n) || eq(s.helper, n) || s.volunteers.some(v => eq(v, n));
+
+/* ---------------- render ---------------- */
+// the "who are you" sheet can be open before the people list has loaded; refresh it unless they're typing
+function whoStale() { const i = $('sheetBody').querySelector('#newName'); return !i || (!i.value && document.activeElement !== i); }
+function render() {
+  const wb = $('whoBtn');
+  if (me) { wb.style.display = ''; wb.innerHTML = `${avatar(me)}${esc(me)}`; } else wb.style.display = 'none';
+  const fab = $('fab'); fab.style.display = me && tab === 'cal' ? '' : 'none'; fab.textContent = '＋ Add';
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
+  $('calView').style.display = tab === 'cal' ? '' : 'none'; $('needsView').style.display = tab === 'needs' ? '' : 'none';
+  if (tab === 'cal') renderCal(); else renderNeeds();
+  if (!me && whoStale()) openWho();
+}
+
+/* ---------------- sheet plumbing ---------------- */
+function openSheetEl() { $('scrim').classList.add('show'); $('sheet').classList.add('show'); }
+function closeSheet() { openId = null; openDate = null; $('scrim').classList.remove('show'); $('sheet').classList.remove('show', 'editing'); }
+
+function openWho() {
+  openId = null;
+  const names = everyone();
+  $('sheetBody').innerHTML = `<h2>Who are you?</h2><div class="sub">Tap your name. This phone will remember it.</div>
+    <div class="pickname">${names.map(n => `<button data-me="${esc(n)}">${avatar(n)}${esc(n)}${isParent(n) ? '<span class="tag">parent</span>' : ''}</button>`).join('')}</div>
+    <label>Not in the list?</label><div class="two"><div><input class="inp" id="newName" placeholder="Your first name" maxlength="30" autocapitalize="words"></div><div style="flex:none"><button class="btn primary sm" id="addMe" style="padding:12px 18px">Join</button></div></div>
+    <div class="err" id="whoErr"></div>`;
+  $('sheet').classList.remove('editing'); openSheetEl();
+}
+function setMe(n) {
+  me = n; try { localStorage.setItem(LS.me, n); } catch (e) {}
+  if (!people.some(p => eq(p, n)) && !isParent(n)) { people.push(n); post({ op: 'person', name: n, added: ymd(new Date()) }); }
+  closeSheet(); tab = 'cal'; render(); toast(`Hi ${n}`);
+}
+
+/* ---------------- shift sheet ---------------- */
+function icsFor(s) {
+  const f = d => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+  const dOnly = d => d.replace(/-/g, '');
+  const esc2 = t => String(t || '').replace(/[\;,]/g, m => '\\' + m).replace(/\n/g, '\\n');
+  const when = s.allday ? [`DTSTART;VALUE=DATE:${dOnly(s.date)}`, `DTEND;VALUE=DATE:${dOnly(addDays(s.date, 1))}`] : [`DTSTART:${f(startDT(s))}`, `DTEND:${f(endDT(s))}`];
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Twin Time//EN', 'BEGIN:VEVENT', `UID:${s.id}-${s.date}@twintime`, `DTSTAMP:${f(new Date())}`, ...when,
+    `SUMMARY:${esc2(s.kind === 'appt' ? (s.what || 'Appointment') : 'Childcare: ' + (s.what || 'helping with the babies'))}`, `DESCRIPTION:${esc2(s.notes)}`, 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+}
+function waLink(s) {
+  const day = dateOf(s.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
+  const when = `${day}${s.allday ? ' (all day)' : ', ' + s.start + '–' + s.end}${s.occ ? ', repeating ' + repeatText(s) : ''}`;
+  const msg = `Can anyone help with the babies on ${when}${s.what ? ' (' + s.what + ')' : ''}? ${s.notes ? s.notes + ' ' : ''}Tap here to say you can: ${location.href.split('#')[0]}`;
+  return 'https://wa.me/?text=' + encodeURIComponent(msg);
+}
+
+function renderSheet(id, date) {
+  const s = findOcc(id, date); if (!s) return;
+  openId = id; openDate = s.date;
+  const st = status(s), parent = isParent(me), mineV = s.volunteers.some(v => eq(v, me)), iAmHelper = s.status === 'confirmed' && eq(s.helper, me), appt = s.kind === 'appt', rep = !!s.occ;
+  const canEdit = parent || (eq(s.by, me) && (appt || s.status === 'open'));
+  const every = rep ? ` (${repeatText(s).replace(/ until.*/, '')})` : '';
+  let h = `<h2>${esc(dayLabel(s.date))}</h2><div class="sub" style="font-size:20px;font-weight:700">${esc(timeRange(s))}</div>
+    <div style="margin:8px 0 2px"><span class="pill ${st.cls}">${esc(appt ? 'Appointment' : st.text)}</span> <span class="fine">${s.what ? esc(s.what) : ''}${s.by ? ' · added by ' + esc(s.by) : ''}</span></div>
+    ${rep ? `<div class="fine" style="margin-top:8px">🔁 Repeats ${esc(repeatText(s))}</div>` : ''}
+    ${s.notes ? `<div class="note">${esc(s.notes)}</div>` : ''}`;
+
+  if (appt) {
+    h += s.volunteers.length ? `<label>Going</label>` + s.volunteers.map(v => `<div class="person">${avatar(v)}<div class="nm">${esc(v)}</div></div>`).join('') : `<div class="fine" style="margin-top:12px">Nobody has said they're coming along yet.</div>`;
+    h += mineV ? `<button class="btn" data-act="vol-off">I'm not coming after all${esc(every)}</button>` : `<button class="btn primary" data-act="vol-on">🙋 I'll come along${esc(every)}</button>`;
+    h += `<button class="btn" data-act="ics">📅 Add this day to my calendar</button>`;
+  } else {
+    if (s.status === 'confirmed') {
+      h += `<label>Covering</label><div class="person">${avatar(s.helper)}<div class="nm">${esc(s.helper)}</div>${parent ? `<button class="btn sm" data-act="unconfirm">Undo</button>` : ''}</div>`;
+    } else if (s.volunteers.length) {
+      h += `<label>${s.kind === 'offer' ? 'Offered by' : 'Can help'}</label>` + s.volunteers.map(v => `<div class="person">${avatar(v)}<div class="nm">${esc(v)}</div>${parent ? `<button class="btn primary sm" data-act="confirm" data-who="${esc(v)}">Confirm${rep ? ' all' : ''}</button>` : ''}</div>`).join('');
+    } else h += `<div class="fine" style="margin-top:12px">Nobody has said they can do this yet.</div>`;
+
+    if (iAmHelper) {
+      h += `<button class="btn" data-act="ics">📅 Add this day to my calendar</button>`;
+      h += rep ? `<button class="btn danger" data-act="cantdo1">I can't make this one</button><button class="btn danger" data-act="cantdo">I can't do these any more</button>` : `<button class="btn danger" data-act="cantdo">I can't make it any more</button>`;
+    } else if (!parent && s.status === 'open' && s.kind === 'need') {
+      h += mineV ? `<button class="btn" data-act="vol-off">Withdraw. I can't do it</button>` : `<button class="btn primary" data-act="vol-on">✋ I can do this${esc(every)}</button>`;
+    }
+    if (!parent && s.status === 'open' && s.kind === 'offer' && eq(s.by, me)) h += `<div class="fine">The parents will confirm your offer.</div>`;
+    if (parent) {
+      if (s.status === 'confirmed') h += `<button class="btn" data-act="ics">📅 Add this day to my calendar</button>`;
+      if (s.status === 'open' && s.kind === 'need') h += `<a class="btn wa" href="${esc(waLink(s))}" target="_blank" rel="noopener">Ask on WhatsApp</a>`;
+      if (s.status === 'open' && s.kind === 'need') {
+        const others = everyone().filter(n => !isParent(n) && !s.volunteers.some(v => eq(v, n)));
+        if (others.length) h += `<label>Or pick someone directly</label><div class="tog">${others.map(n => `<button data-act="confirm" data-who="${esc(n)}">${esc(n)}</button>`).join('')}</div>`;
+      }
+    }
+  }
+  if (canEdit) {
+    const noun = appt ? 'appointment' : s.kind === 'offer' && s.status === 'open' ? 'offer' : 'shift';
+    if (rep) h += `<button class="btn" data-act="edit1">Edit this day only</button><button class="btn" data-act="edit">Edit every ${noun} in the series</button><button class="btn danger" data-act="del1">Delete this day only</button><button class="btn danger" data-act="delfrom">Delete this day and all after</button>`;
+    else h += `<button class="btn" data-act="edit">Edit</button><button class="btn danger" data-act="del">${appt ? 'Delete appointment' : s.kind === 'offer' && s.status === 'open' ? (parent ? 'Decline offer' : 'Withdraw offer') : 'Cancel shift'}</button>`;
+  }
+  h += `<button class="btn" data-act="close">Close</button>`;
+  $('sheetBody').innerHTML = h; $('sheet').classList.remove('editing'); openSheetEl();
+}
+
+/* ---------------- add / edit form ---------------- */
+const DAYCHIPS = [[1, 'Mon'], [2, 'Tue'], [3, 'Wed'], [4, 'Thu'], [5, 'Fri'], [6, 'Sat'], [0, 'Sun']];
+function readForm() {
+  const v = {
+    date: $('fDate').value, start: $('fStart').value, end: $('fEnd').value, what: $('fWhat').value.trim(), notes: $('fNotes').value.trim(),
+    allday: $('fAllday').checked, rtype: $('fRepeat') ? $('fRepeat').value : '', until: $('fUntil') ? $('fUntil').value : '',
+    days: [...document.querySelectorAll('#fDays button.on')].map(b => +b.dataset.dow)
+  };
+  return v;
+}
+function repeatCode(v) { if (!v.rtype) return ''; if (v.rtype === 'daily' || v.rtype === 'monthly') return v.rtype; return `${v.rtype}:${v.days.join(',')}`; }
+function openForm(id, preset) {
+  const p = preset || {};
+  const base = id ? shifts.find(x => x.id === id) : null;
+  const mode = !id ? 'create' : p.occDate ? 'edit1' : 'edit';
+  const src = base ? (mode === 'edit1' ? { ...base, date: p.occDate } : base) : null;
+  const kind = src ? src.kind : (p.kind || (isParent(me) ? 'need' : 'offer'));
+  const rc = src ? parseRepeat(src.repeat) : null;
+  const d = src ? { date: src.date, start: src.start, end: src.end, what: src.what, notes: src.notes, allday: src.allday, rtype: rc ? rc.t : '', days: rc && rc.days ? rc.days : null, until: src.until || '' }
+    : { date: p.date || ymd(new Date(Date.now() + 864e5)), start: p.start || '10:00', end: p.end || '14:00', what: p.what || '', notes: p.notes || '', allday: !!p.allday, rtype: p.rtype || '', days: p.days || null, until: p.until || '' };
+  if (!d.days) d.days = [dateOf(d.date).getDay()];
+  const kinds = isParent(me) ? [['need', 'Book in'], ['appt', 'Appointment']] : [['offer', 'Offer a time'], ['appt', 'Appointment']];
+  const title = src ? (kind === 'appt' ? 'Edit appointment' : 'Edit shift') : kind === 'need' ? 'Book in' : kind === 'offer' ? 'Offer a time' : 'Add an appointment';
+  const sub = mode === 'edit1' ? `Changing ${dayLabel(src.date)} only.` : kind === 'need' ? 'Say when you need a hand.' : kind === 'offer' ? "Say when you're free. The parents will confirm." : "It goes on everyone's calendar, and people can say they'll come along.";
+  const isAppt = kind === 'appt';
+  const showRepeat = mode !== 'edit1';
+  $('sheetBody').innerHTML = `<h2>${title}</h2><div class="sub">${sub}</div>
+    ${mode === 'create' ? `<div class="kinds" id="kinds">${kinds.map(([k, l]) => `<button type="button" data-kind="${k}" class="${k === kind ? 'on' : ''}">${l}</button>`).join('')}</div>` : ''}
+    <label>${mode === 'edit' && d.rtype ? 'Starts on' : 'Date'}</label><input class="inp" type="date" id="fDate" value="${esc(d.date)}">
+    <label class="chk"><input type="checkbox" id="fAllday" ${d.allday ? 'checked' : ''}> All day</label>
+    <div class="two" id="fTimes" style="${d.allday ? 'display:none' : ''}"><div><label>From</label><input class="inp" type="time" id="fStart" value="${esc(d.start)}"></div><div><label>To</label><input class="inp" type="time" id="fEnd" value="${esc(d.end)}"></div></div>
+    ${showRepeat ? `<label>Repeat</label><select class="inp" id="fRepeat"><option value="">Doesn't repeat</option><option value="daily">Every day</option><option value="weekly">Every week</option><option value="biweekly">Every 2 weeks</option><option value="monthly">Every month</option></select>
+    <div id="fDaysWrap" style="display:none"><label>On</label><div class="tog" id="fDays">${DAYCHIPS.map(([n, l]) => `<button type="button" data-dow="${n}" class="${d.days.includes(n) ? 'on' : ''}">${l}</button>`).join('')}</div></div>
+    <div id="fUntilWrap" style="display:none"><label>Stops on (optional)</label><input class="inp" type="date" id="fUntil" value="${esc(d.until)}"></div>` : ''}
+    ${isAppt ? `<label>What's the appointment</label><input class="inp" id="fWhat" value="${esc(d.what)}" placeholder="e.g. 8-week check, Margot" maxlength="60">
+    <div class="tog" style="margin-top:8px">${APPT_LABELS.map(l => `<button type="button" data-label="${esc(l)}">${esc(l)}</button>`).join('')}</div>` : `<input type="hidden" id="fWhat" value="${esc(d.what)}">`}
+    <label>${kind === 'appt' ? 'Where / notes' : 'Notes'}</label><textarea class="inp" id="fNotes" placeholder="${kind === 'appt' ? 'Address, what to bring…' : 'Anything they should know'}">${esc(d.notes)}</textarea>
+    <div class="err" id="fErr"></div>
+    <button class="btn primary" id="fSave">${src ? 'Save changes' : kind === 'need' ? 'Book in' : kind === 'offer' ? 'Offer this time' : 'Add appointment'}</button>
+    <button class="btn" data-act="${src ? 'back' : 'close'}">Cancel</button>`;
+  if (showRepeat) { $('fRepeat').value = d.rtype; syncRepeat(); }
+  const B = $('sheetBody'); B.dataset.editId = id || ''; B.dataset.mode = mode; B.dataset.occ = p.occDate || ''; B.dataset.kind = kind; B.dataset.daysTouched = '';
+  $('sheet').classList.add('editing'); openSheetEl();
+}
+function syncRepeat() {
+  const r = $('fRepeat'); if (!r) return;
+  $('fDaysWrap').style.display = (r.value === 'weekly' || r.value === 'biweekly') ? '' : 'none';
+  $('fUntilWrap').style.display = r.value ? '' : 'none';
+}
+function saveForm() {
+  const v = readForm(), B = $('sheetBody'), err = m => { $('fErr').textContent = m; };
+  if (!v.date) return err('Pick a date.');
+  if (v.allday) { v.start = '00:00'; v.end = '23:59'; }
+  else if (!v.start || !v.end) return err('Pick both times.');
+  else if (v.start === v.end) return err('Start and end are the same.');
+  const mode = B.dataset.mode, id = B.dataset.editId, kind = B.dataset.kind;
+  let repeat = mode === 'edit1' ? '' : repeatCode(v), until = mode === 'edit1' ? '' : v.until;
+  if ((v.rtype === 'weekly' || v.rtype === 'biweekly') && !v.days.length) return err('Pick at least one day of the week.');
+  if (until && until < v.date) return err('"Stops on" is before the start date.');
+  let date = v.date;
+  if (repeat) date = firstOnOrAfter(v.date, repeat);
+  if (until && date > until) return err('That repeat ends before its first day.');
+  const vals = { date, start: v.start, end: v.end, what: v.what, notes: v.notes, allday: v.allday, repeat, until: repeat ? until : '' };
+
+  if (mode === 'edit') { patch(id, vals); toast('Saved'); $('sheet').classList.remove('editing'); return renderSheet(id, date); }
+  if (mode === 'edit1') {       // this day only: split it off the series
+    const b = shifts.find(x => x.id === id), occDate = B.dataset.occ;
+    const one = { ...b, ...vals, id: uid(), repeat: '', until: '', skip: [], volunteers: [...b.volunteers] };
+    shifts.push(one); b.skip = [...b.skip, occDate]; saveLocal(); render();
+    post({ op: 'add', item: shiftFields(one) }); post({ op: 'skipdate', id, date: occDate });
+    toast('Saved for this day only'); $('sheet').classList.remove('editing'); return renderSheet(one.id, date);
+  }
+  const s = { id: uid(), ...vals, skip: [], kind, status: 'open', helper: '', volunteers: kind === 'offer' ? [me] : [], by: me, created: ymd(new Date()) };
+  shifts.push(s); saveLocal(); render(); post({ op: 'add', item: shiftFields(s) });
+  closeSheet(); toast(kind === 'need' ? 'Added. Tap it to ask on WhatsApp' : kind === 'offer' ? 'Offered. The parents will confirm' : 'Appointment added');
+  if (tab === 'cal') { weekStart = mondayOf(date); renderCal(); }
+}
+
+/* ---------------- mutations ---------------- */
+function patch(id, ch) {
+  const s = shifts.find(x => x.id === id); if (!s) return;
+  Object.assign(s, ch); saveLocal(); render();
+  const f = {}; Object.keys(ch).forEach(k => f[k] = Array.isArray(ch[k]) ? ch[k].join('|') : typeof ch[k] === 'boolean' ? (ch[k] ? '1' : '') : ch[k]);
+  post({ op: 'update', id, fields: f });
+}
+function volunteer(id, on) {
+  const s = shifts.find(x => x.id === id); if (!s) return;
+  s.volunteers = s.volunteers.filter(v => !eq(v, me)); if (on) s.volunteers.push(me);
+  saveLocal(); render(); post({ op: 'volunteer', id, name: me, on });
+}
+function confirmShift(id, who) {
+  const s = shifts.find(x => x.id === id); if (!s || s.status === 'confirmed') return;
+  s.status = 'confirmed'; s.helper = who; if (!s.volunteers.some(v => eq(v, who))) s.volunteers.push(who);
+  saveLocal(); render(); post({ op: 'confirm', id, helper: who });
+}
+function removeShift(id) { shifts = shifts.filter(x => x.id !== id); saveLocal(); render(); post({ op: 'delete', id }); }
+function skipDate(id, date) { const s = shifts.find(x => x.id === id); if (!s) return; if (!s.skip.includes(date)) s.skip.push(date); saveLocal(); render(); post({ op: 'skipdate', id, date }); }
+function deleteFrom(id, date) {      // this day and every one after it
+  const s = shifts.find(x => x.id === id); if (!s) return;
+  if (date <= s.date) return removeShift(id);
+  patch(id, { until: addDays(date, -1) });
+}
+function splitOff(id, date, changes) {   // turn one day of a series into its own one-off shift
+  const b = shifts.find(x => x.id === id); if (!b) return null;
+  const one = { ...b, ...changes, id: uid(), date, repeat: '', until: '', skip: [], volunteers: changes.volunteers || [...b.volunteers] };
+  shifts.push(one); b.skip = [...b.skip, date]; saveLocal(); render();
+  post({ op: 'add', item: shiftFields(one) }); post({ op: 'skipdate', id, date });
+  return one;
+}
+
+function downloadIcs(s) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([icsFor(s)], { type: 'text/calendar' })); a.download = 'childcare.ics';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+/* ---------------- things we need ---------------- */
+let needs = [];
+const newNeedId = () => 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const needsStatus = m => { $('needsStatus').textContent = m || ''; };
+function renderNeeds() {
+  const list = $('needsList'); list.replaceChildren();
+  $('needsCount').textContent = needs.length ? `${needs.length} item${needs.length === 1 ? '' : 's'} on the list` : '';
+  if (!needs.length) { const d = document.createElement('div'); d.className = 'empty'; d.textContent = 'Nothing on the list 🎉'; list.append(d); return; }
+  needs.forEach(n => {
+    const row = document.createElement('div'); row.className = 'need-item';
+    const sp = document.createElement('span'); sp.textContent = n.item;
+    const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'need-remove'; btn.textContent = '✕'; btn.setAttribute('aria-label', 'Remove ' + n.item);
+    btn.addEventListener('click', () => removeNeed(n.id));
+    row.append(sp, btn); list.append(row);
+  });
+}
+function addNeed(text) {
+  const item = String(text || '').trim().replace(/\s+/g, ' ').slice(0, 120); if (!item) return false;
+  if (needs.some(n => eq(n.item, item))) { needsStatus(`"${item}" is already on the list.`); return false; }
+  needsStatus('');
+  const id = newNeedId(); needs.push({ id, item }); saveLocal(); renderNeeds(); post({ op: 'need_add', id, item }); return true;
+}
+function removeNeed(id) { needs = needs.filter(n => n.id !== id); saveLocal(); renderNeeds(); post({ op: 'need_remove', id }); }
+
+/* ---------------- calendar: one week at a time, days side by side ---------------- */
+let calFilter = 'all', weekStart = null;
+const mondayOf = d => addDays(d, -((dateOf(d).getDay() + 6) % 7));
+const shortT = t => t.endsWith(':00') ? String(+t.slice(0, 2)) : t.replace(/^0/, '');
+const noteT = s => s.allday ? 'All day' : `${shortT(s.start)}–${shortT(s.end)}${s.end <= s.start ? ' +1' : ''}`;
+function calItems() { const end = addDays(weekStart, 6); return occs.filter(s => s.date >= weekStart && s.date <= end && (calFilter === 'all' || involves(s, calFilter))); }
+function renderPeople() {
+  const names = everyone().filter(n => !eq(n, me));
+  const chip = (key, label, av) => `<button class="pchip ${av ? '' : 'all'} ${calFilter === key ? 'on' : ''}" data-p="${esc(key)}">${av ? avatar(av) : ''}${esc(label)}</button>`;
+  $('people').innerHTML = chip('all', 'Everyone') + (me ? chip(me, 'Me', me) : '') + names.map(n => chip(n, n, n)).join('');
+  if (calFilter !== 'all' && !everyone().some(n => eq(n, calFilter))) calFilter = 'all';
+}
+// what shows on the little card: appointments by name, otherwise a person's name
+// (who's covering, else who has said they can help, else whoever posted it)
+function itemLabel(s) {
+  if (s.kind === 'appt') return s.what || 'Appointment';
+  if (s.status === 'confirmed') return `✓ ${s.helper}`;
+  if (s.volunteers.length) return s.volunteers.slice(0, 2).join(', ') + (s.volunteers.length > 2 ? '…' : '');
+  return s.by || 'Someone';
+}
+const MM = `<div class="mm" aria-hidden="true"><svg viewBox="0 0 100 100"><circle cx="35" cy="42" r="26" fill="var(--appt)"/><circle cx="65" cy="42" r="26" fill="var(--accent)" fill-opacity=".92"/><text x="35" y="52" text-anchor="middle" font-size="30" font-weight="800" font-family="ui-serif,Georgia,serif" fill="#fff">M</text><text x="65" y="52" text-anchor="middle" font-size="30" font-weight="800" font-family="ui-serif,Georgia,serif" fill="#fff">M</text><text x="50" y="90" text-anchor="middle" font-size="11" font-weight="700" fill="var(--muted)" font-family="-apple-system,sans-serif">Margot &amp; Marshall</text></svg></div>`;
+function weekLabel() {
+  const a = dateOf(weekStart), b = dateOf(addDays(weekStart, 6)), o = { day: 'numeric', month: 'short' };
+  return a.getMonth() === b.getMonth() ? `${a.getDate()}–${b.toLocaleDateString('en-GB', o)} ${b.getFullYear()}` : `${a.toLocaleDateString('en-GB', o)} – ${b.toLocaleDateString('en-GB', o)} ${b.getFullYear()}`;
+}
+function renderCal() {
+  if (!weekStart) weekStart = mondayOf(ymd(new Date()));
+  renderPeople();
+  occs = expand(weekStart, addDays(weekStart, 6));
+  const items = calItems(), today = ymd(new Date());
+  $('cal').innerHTML = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)).map(d => {
+    const dt = dateOf(d);
+    const list = items.filter(s => s.date === d).sort((a, b) => (b.allday ? 1 : 0) - (a.allday ? 1 : 0) || a.start.localeCompare(b.start));
+    return `<div class="wd ${d === today ? 'today' : ''} ${d < today ? 'gone' : ''}" data-d="${d}"><div class="dh"><span class="dw">${dt.toLocaleDateString('en-GB', { weekday: 'short' })}</span><span class="dn">${dt.getDate()}</span></div>${list.map(s => `<button class="ev ${status(s).blk}" data-id="${esc(s.id)}" data-d="${esc(s.date)}"><b>${esc(itemLabel(s))}${s.occ ? ' 🔁' : ''}</b>${s.notes ? `<span class="nt">${esc(s.notes)}</span>` : ''}<span class="tm">${esc(noteT(s))}</span></button>`).join('')}</div>`;
+  }).join('') + MM;
+  $('calMonth').textContent = weekLabel();
+}
+
+/* ---------------- events ---------------- */
+$('tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; tab = b.dataset.t; render(); if (tab === 'needs' && SCRIPT_URL) load(true); });
+$('fab').addEventListener('click', () => openForm());
+$('cal').addEventListener('click', e => {
+  const b = e.target.closest('.ev'); if (b) return renderSheet(b.dataset.id, b.dataset.d);
+  const col = e.target.closest('.wd'); if (!col || !me || e.target.closest('.dh')) return;
+  openForm(null, { date: col.dataset.d });
+});
+$('people').addEventListener('click', e => { const c = e.target.closest('[data-p]'); if (c) { calFilter = c.dataset.p; renderCal(); } });
+$('calToday').addEventListener('click', () => { weekStart = mondayOf(ymd(new Date())); renderCal(); });
+$('calPrev').addEventListener('click', () => { weekStart = addDays(weekStart, -7); renderCal(); });
+$('calNext').addEventListener('click', () => { weekStart = addDays(weekStart, 7); renderCal(); });
+$('needForm').addEventListener('submit', e => { e.preventDefault(); const i = $('needInput'); if (addNeed(i.value)) i.value = ''; });
+$('whoBtn').addEventListener('click', openWho);
+$('scrim').addEventListener('click', () => { if (me) closeSheet(); });
+$('sheetBody').addEventListener('change', e => {
+  if (e.target.id === 'fAllday') $('fTimes').style.display = e.target.checked ? 'none' : '';
+  if (e.target.id === 'fRepeat') syncRepeat();
+  if (e.target.id === 'fDate' && !$('sheetBody').dataset.daysTouched && $('fDays')) {   // keep "every <weekday>" in step with the date until they pick days themselves
+    const dow = dateOf(e.target.value || ymd(new Date())).getDay();
+    document.querySelectorAll('#fDays button').forEach(b => b.classList.toggle('on', +b.dataset.dow === dow));
+  }
+});
+$('sheetBody').addEventListener('click', e => {
+  const t = e.target;
+  const m = t.closest('[data-me]'); if (m) return setMe(m.dataset.me);
+  if (t.id === 'addMe') { const n = $('newName').value.trim(); if (!n) { $('whoErr').textContent = 'Type your name first.'; return; } const known = everyone().find(x => eq(x, n)); return setMe(known || n); }
+  if (t.id === 'fSave') return saveForm();
+  const dw = t.closest('#fDays [data-dow]'); if (dw) { dw.classList.toggle('on'); $('sheetBody').dataset.daysTouched = '1'; return; }
+  const kb = t.closest('[data-kind]');
+  if (kb && kb.dataset.kind !== $('sheetBody').dataset.kind) { const v = readForm(); return openForm(null, { kind: kb.dataset.kind, date: v.date, start: v.start, end: v.end, what: $('fWhat').value, notes: $('fNotes').value, allday: v.allday, rtype: v.rtype, days: v.days, until: v.until }); }
+  const lb = t.closest('[data-label]'); if (lb) { $('fWhat').value = lb.dataset.label; return; }
+  const a = t.closest('[data-act]'); if (!a) return;
+  const id = openId, date = openDate, s = findOcc(id, date), act = a.dataset.act, two = msg => { if (a.dataset.sure) return true; a.dataset.sure = '1'; a.textContent = msg; return false; };
+  if (act === 'close') return closeSheet();
+  if (act === 'back') return renderSheet($('sheetBody').dataset.editId, $('sheetBody').dataset.occ || date);
+  if (!s) return;
+  if (act === 'vol-on') { volunteer(id, true); toast(s.kind === 'appt' ? 'Great, you\'re on the list' : 'Thanks! The parents will confirm'); return renderSheet(id, date); }
+  if (act === 'vol-off') { volunteer(id, false); return renderSheet(id, date); }
+  if (act === 'confirm') { confirmShift(id, a.dataset.who); toast(`${a.dataset.who} is confirmed`); return renderSheet(id, date); }
+  if (act === 'unconfirm') { patch(id, { status: 'open', helper: '' }); return renderSheet(id, date); }
+  if (act === 'cantdo') { if (!two('Tap again to cancel')) return; const rest = s.base.volunteers.filter(v => !eq(v, me)); patch(id, { status: 'open', helper: '', volunteers: rest }); toast('Thanks for letting them know'); return renderSheet(id, date); }
+  if (act === 'cantdo1') { if (!two('Tap again to confirm')) return; const one = splitOff(id, date, { status: 'open', helper: '', kind: 'need', volunteers: s.base.volunteers.filter(v => !eq(v, me)) }); toast('Thanks. That day is open again'); return renderSheet(one.id, date); }
+  if (act === 'edit') return openForm(id);
+  if (act === 'edit1') return openForm(id, { occDate: date });
+  if (act === 'ics') return downloadIcs(s);
+  if (act === 'del') { if (!two('Tap again to confirm')) return; closeSheet(); removeShift(id); return toast('Removed'); }
+  if (act === 'del1') { if (!two('Tap again to confirm')) return; closeSheet(); skipDate(id, date); return toast('Removed for that day'); }
+  if (act === 'delfrom') { if (!two('Tap again to confirm')) return; closeSheet(); deleteFrom(id, date); return toast(date <= s.base.date ? 'Series removed' : 'Series stopped'); }
+});
+document.addEventListener('visibilitychange', () => { if (!document.hidden && SCRIPT_URL && !$('sheet').classList.contains('editing')) load(true); });
+
+/* ---------------- boot ---------------- */
+if (!SCRIPT_URL) { $('banner').textContent = 'Not connected to a Google Sheet yet, so Twin Time only lives on this phone.'; $('banner').classList.add('show'); }
+loadLocal(); render(); load();
+</script>
+</body>
+</html>
