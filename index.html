@@ -151,14 +151,14 @@
   <div class="banner" id="banner"></div>
   <div class="tabs" id="tabs">
     <button data-t="cal" class="on">Calendar</button>
-    <button data-t="cover" id="tabCover">Needs cover</button>
+    <button data-t="cover" id="tabCover">Need help</button>
     <button data-t="needs">🛒 Things we need</button>
   </div>
   <div id="calView">
     <div class="calbar"><button id="calPrev" aria-label="Previous week">‹</button><div class="mo" id="calMonth"></div><button id="calToday">Today</button><button id="calNext" aria-label="Next week">›</button></div>
     <div class="people" id="people"></div>
     <div class="cal" id="cal"></div>
-    <div class="legend"><span><i style="background:var(--need)"></i>Needs cover</span><span><i style="background:var(--ok)"></i>Covered</span><span><i style="background:var(--offer)"></i>Booked in</span><span><i style="background:var(--appt)"></i>Appointment</span></div>
+    <div class="legend"><span><i style="background:var(--need)"></i>Need help</span><span><i style="background:var(--ok)"></i>Sorted</span><span><i style="background:var(--offer)"></i>Booked in</span><span><i style="background:var(--appt)"></i>Appointment</span></div>
   </div>
   <div id="coverView" style="display:none"><div id="coverList"></div></div>
   <div id="needsView" style="display:none">
@@ -309,8 +309,8 @@ function status(s) {
   if (s.kind === 'appt') return { cls: 'appt', text: s.volunteers.length ? `${s.volunteers.length} going` : 'Appointment', bar: 's-appt', short: s.volunteers.length ? s.volunteers.slice(0, 2).join(', ') + (s.volunteers.length > 2 ? '…' : '') + ' going' : 'Appointment', blk: 'b-appt' };
   if (s.kind === 'need') {
     const who = s.status === 'confirmed' ? [s.helper] : s.volunteers;
-    if (who.length) return { cls: 'ok', text: `✓ ${who.join(', ')} covering`, bar: 's-ok', short: `✓ ${who.join(', ')}`, blk: 'b-ok' };
-    return { cls: 'need', text: 'Needs cover', bar: 's-need', short: 'Needs cover', blk: 'b-need' };
+    if (who.length) return { cls: 'ok', text: `✓ ${who.join(', ')} helping`, bar: 's-ok', short: `✓ ${who.join(', ')}`, blk: 'b-ok' };
+    return { cls: 'need', text: 'Need help', bar: 's-need', short: 'Need help', blk: 'b-need' };
   }
   const nm = s.by || s.volunteers[0] || 'Someone';      // a booking: someone putting themselves on the calendar
   return { cls: 'offer', text: `${nm} booked in`, bar: 's-offer', short: `${nm} booked in`, blk: 'b-offer' };
@@ -329,7 +329,7 @@ function render() {
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
   $('calView').style.display = tab === 'cal' ? '' : 'none'; $('needsView').style.display = tab === 'needs' ? '' : 'none'; $('coverView').style.display = tab === 'cover' ? '' : 'none';
   const cv = coverSlots(), open = cv.filter(s => !isCovered(s)).length;
-  $('tabCover').innerHTML = 'Needs cover' + (open ? `<span class="n">${open}</span>` : '');
+  $('tabCover').innerHTML = 'Need help' + (open ? `<span class="n">${open}</span>` : '');
   if (tab === 'cal') renderCal(); else if (tab === 'cover') renderCover(cv); else renderNeeds();
   if (!me && whoStale()) openWho();
 }
@@ -365,7 +365,7 @@ function icsFor(s) {
 function waLink(s) {
   const day = dateOf(s.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
   const when = `${day}${s.allday ? ' (all day)' : ', ' + s.start + '–' + s.end}${s.occ ? ', repeating ' + repeatText(s) : ''}`;
-  const msg = `Can anyone cover the babies on ${when}${s.what ? ' (' + s.what + ')' : ''}? ${s.notes ? s.notes + ' ' : ''}Tap here to say you can: ${location.href.split('#')[0]}`;
+  const msg = `Can anyone help with the babies on ${when}${s.what ? ' (' + s.what + ')' : ''}? ${s.notes ? s.notes + ' ' : ''}Tap here to say you can: ${location.href.split('#')[0]}`;
   return 'https://wa.me/?text=' + encodeURIComponent(msg);
 }
 
@@ -386,10 +386,10 @@ function renderSheet(id, date) {
     h += `<button class="btn" data-act="ics">📅 Add this day to my calendar</button>`;
   } else if (s.kind === 'need') {
     const who = s.status === 'confirmed' ? [s.helper] : s.volunteers;
-    h += who.length ? `<label>Covering</label>` + who.map(v => `<div class="person">${avatar(v)}<div class="nm">${esc(v)}</div></div>`).join('') : `<div class="fine" style="margin-top:12px">Nobody has said they can cover this yet.</div>`;
+    h += who.length ? `<label>Helping</label>` + who.map(v => `<div class="person">${avatar(v)}<div class="nm">${esc(v)}</div></div>`).join('') : `<div class="fine" style="margin-top:12px">Nobody has said they can help yet.</div>`;
     if (s.status === 'confirmed') { if (parent) h += `<button class="btn" data-act="unconfirm">Open it up again</button>`; }
     else if (mineV) h += rep ? `<button class="btn" data-act="cantdo1">I can't make this one</button><button class="btn" data-act="vol-off">I can't do these any more</button>` : `<button class="btn" data-act="vol-off">I can't make it after all</button>`;
-    else h += `<button class="btn primary" data-act="vol-on">✋ I can cover this${esc(every)}</button>`;
+    else h += `<button class="btn primary" data-act="vol-on">✋ I can help with this${esc(every)}</button>`;
     if (mineV || s.status === 'confirmed') h += `<button class="btn" data-act="ics">📅 Add this day to my calendar</button>`;
     if (parent && !who.length) h += `<a class="btn wa" href="${esc(waLink(s))}" target="_blank" rel="noopener">Ask on WhatsApp</a>`;
   } else {
@@ -426,9 +426,9 @@ function openForm(id, preset) {
   const d = src ? { date: src.date, start: src.start, end: src.end, what: src.what, notes: src.notes, allday: src.allday, rtype: rc ? rc.t : '', days: rc && rc.days ? rc.days : null, until: src.until || '' }
     : { date: p.date || ymd(new Date(Date.now() + 864e5)), start: p.start || '10:00', end: p.end || '14:00', what: p.what || '', notes: p.notes || '', allday: !!p.allday, rtype: p.rtype || '', days: p.days || null, until: p.until || '' };
   if (!d.days) d.days = [dateOf(d.date).getDay()];
-  const kinds = isParent(me) ? [['book', 'Book in'], ['need', 'Needs cover'], ['appt', 'Appointment']] : [['book', 'Book in'], ['appt', 'Appointment']];
-  const title = src ? (kind === 'appt' ? 'Edit appointment' : kind === 'need' ? 'Edit cover request' : 'Edit booking') : kind === 'need' ? 'Needs cover' : kind === 'appt' ? 'Add an appointment' : 'Book in';
-  const sub = mode === 'edit1' ? `Changing ${dayLabel(src.date)} only.` : kind === 'need' ? 'Ask the family for a hand. Anyone can say they can cover it.' : kind === 'appt' ? "It goes on everyone's calendar, and people can say they'll come along." : 'Put yourself on the calendar. No approval needed.';
+  const kinds = isParent(me) ? [['book', 'Book in'], ['need', 'Need help'], ['appt', 'Appointment']] : [['book', 'Book in'], ['appt', 'Appointment']];
+  const title = src ? (kind === 'appt' ? 'Edit appointment' : kind === 'need' ? 'Edit help request' : 'Edit booking') : kind === 'need' ? 'Need help' : kind === 'appt' ? 'Add an appointment' : 'Book in';
+  const sub = mode === 'edit1' ? `Changing ${dayLabel(src.date)} only.` : kind === 'need' ? 'Ask the family for a hand. Anyone can say they can help.' : kind === 'appt' ? "It goes on everyone's calendar, and people can say they'll come along." : 'Put yourself on the calendar. No approval needed.';
   const isAppt = kind === 'appt';
   const showRepeat = mode !== 'edit1';
   $('sheetBody').innerHTML = `<h2>${title}</h2><div class="sub">${sub}</div>
@@ -443,7 +443,7 @@ function openForm(id, preset) {
     <div class="tog" style="margin-top:8px">${APPT_LABELS.map(l => `<button type="button" data-label="${esc(l)}">${esc(l)}</button>`).join('')}</div>` : `<input type="hidden" id="fWhat" value="${esc(d.what)}">`}
     <label>${kind === 'appt' ? 'Where / notes' : 'Notes'}</label><textarea class="inp" id="fNotes" placeholder="${kind === 'appt' ? 'Address, what to bring…' : 'Anything they should know'}">${esc(d.notes)}</textarea>
     <div class="err" id="fErr"></div>
-    <button class="btn primary" id="fSave">${src ? 'Save changes' : kind === 'need' ? 'Ask for cover' : kind === 'appt' ? 'Add appointment' : 'Book in'}</button>
+    <button class="btn primary" id="fSave">${src ? 'Save changes' : kind === 'need' ? 'Ask for help' : kind === 'appt' ? 'Add appointment' : 'Book in'}</button>
     <button class="btn" data-act="${src ? 'back' : 'close'}">Cancel</button>`;
   if (showRepeat) { $('fRepeat').value = d.rtype; syncRepeat(); }
   const B = $('sheetBody'); B.dataset.editId = id || ''; B.dataset.mode = mode; B.dataset.occ = p.occDate || ''; B.dataset.kind = kind; B.dataset.daysTouched = '';
@@ -550,21 +550,21 @@ const isCovered = s => s.status === 'confirmed' || s.volunteers.length > 0;
 function coverSlots() {      // every upcoming cover request, repeats included, from today
   const t = ymd(new Date());
   const seen = {};      // a repeating request only lists its next few days, so the list stays short
-  return expand(t, addDays(t, 120)).filter(s => s.kind === 'need').sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start)).filter(s => !s.occ || (seen[s.id] = (seen[s.id] || 0) + 1) <= 4);
+  return expand(t, addDays(t, 730)).filter(s => s.kind === 'need').sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start)).filter(s => !s.occ || (seen[s.id] = (seen[s.id] || 0) + 1) <= 4);
 }
 function coverCard(s) {
   const who = s.status === 'confirmed' ? [s.helper] : s.volunteers, covered = who.length > 0, mine = who.some(v => eq(v, me)) || eq(s.by, me);
   return `<div class="cv ${covered ? 's-ok' : ''}" role="button" tabindex="0" data-id="${esc(s.id)}" data-d="${esc(s.date)}">
     <div class="t">${esc(timeRange(s))}${s.occ ? ' 🔁' : ''}</div>
     ${s.notes ? `<div class="w">${esc(s.notes)}</div>` : ''}
-    <div class="r"><span class="pill ${covered ? 'ok' : 'need'}">${covered ? esc('✓ ' + who.join(', ') + ' covering') : 'Needs cover'}</span>${!covered && me && !mine ? `<button class="btn primary sm" data-cover="${esc(s.id)}" data-d="${esc(s.date)}">✋ I can cover</button>` : ''}</div></div>`;
+    <div class="r"><span class="pill ${covered ? 'ok' : 'need'}">${covered ? esc('✓ ' + who.join(', ') + ' helping') : 'Need help'}</span>${!covered && me && !mine ? `<button class="btn primary sm" data-cover="${esc(s.id)}" data-d="${esc(s.date)}">✋ I can help</button>` : ''}</div></div>`;
 }
 function renderCover(list) {
   list = list || coverSlots();
   const group = (arr, title) => { let h = '', last = ''; if (!arr.length) return ''; h += `<div class="cvday" style="margin-top:6px;color:var(--ink)">${title} (${arr.length})</div>`; arr.forEach(s => { if (s.date !== last) { last = s.date; h += `<div class="cvday">${esc(dayLabel(s.date))}</div>`; } h += coverCard(s); }); return h; };
   const open = list.filter(s => !isCovered(s)), done = list.filter(isCovered);
-  $('coverList').innerHTML = !list.length ? `<div class="empty"><b>Nothing needs cover</b>${isParent(me) ? 'Tap “Add” to ask the family for a hand.' : 'When Ollie or Katie ask for cover it will show up here.'}</div>` : group(open, 'Still needs cover') + group(done, 'Covered') || '';
-  if (list.length && !open.length) $('coverList').innerHTML = `<div class="empty" style="padding:22px"><b>All covered 🎉</b></div>` + $('coverList').innerHTML;
+  $('coverList').innerHTML = !list.length ? `<div class="empty"><b>Nothing needs help</b>${isParent(me) ? 'Tap “Add” to ask the family for a hand.' : 'When Ollie or Katie ask for help it will show up here.'}</div>` : group(open, 'Still need help') + group(done, 'Sorted') || '';
+  if (list.length && !open.length) $('coverList').innerHTML = `<div class="empty" style="padding:22px"><b>All sorted 🎉</b></div>` + $('coverList').innerHTML;
 }
 
 /* ---------------- calendar: one week at a time, days side by side ---------------- */
@@ -582,7 +582,7 @@ function renderPeople() {
 // what shows on the little card: appointments by name, bookings by the person's name, cover requests say who's covering
 function itemLabel(s) {
   if (s.kind === 'appt') return s.what || 'Appointment';
-  if (s.kind === 'need') { const who = s.status === 'confirmed' ? [s.helper] : s.volunteers; return who.length ? `✓ ${who.slice(0, 2).join(', ')}${who.length > 2 ? '…' : ''}` : 'Needs cover'; }
+  if (s.kind === 'need') { const who = s.status === 'confirmed' ? [s.helper] : s.volunteers; return who.length ? `✓ ${who.slice(0, 2).join(', ')}${who.length > 2 ? '…' : ''}` : 'Need help'; }
   return s.by || s.volunteers[0] || 'Someone';
 }
 const MM = `<div class="mm" aria-hidden="true"><svg viewBox="0 0 100 100"><circle cx="35" cy="42" r="26" fill="var(--appt)"/><circle cx="65" cy="42" r="26" fill="var(--accent)" fill-opacity=".92"/><text x="35" y="52" text-anchor="middle" font-size="30" font-weight="800" font-family="ui-serif,Georgia,serif" fill="#fff">M</text><text x="65" y="52" text-anchor="middle" font-size="30" font-weight="800" font-family="ui-serif,Georgia,serif" fill="#fff">M</text><text x="50" y="90" text-anchor="middle" font-size="11" font-weight="700" fill="var(--muted)" font-family="-apple-system,sans-serif">Margot &amp; Marshall</text></svg></div>`;
@@ -607,7 +607,7 @@ function renderCal() {
 $('tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; tab = b.dataset.t; render(); if (tab !== 'cal' && SCRIPT_URL) load(true); });
 $('fab').addEventListener('click', () => openForm(null, tab === 'cover' && isParent(me) ? { kind: 'need' } : undefined));
 $('coverList').addEventListener('click', e => {
-  const b = e.target.closest('[data-cover]'); if (b) { volunteer(b.dataset.cover, true); return toast('Thanks! You\'re down to cover it'); }
+  const b = e.target.closest('[data-cover]'); if (b) { volunteer(b.dataset.cover, true); return toast('Thanks! You\'re down to help'); }
   const c = e.target.closest('.cv'); if (c) renderSheet(c.dataset.id, c.dataset.d);
 });
 $('cal').addEventListener('click', e => {
@@ -644,7 +644,7 @@ $('sheetBody').addEventListener('click', e => {
   if (act === 'close') return closeSheet();
   if (act === 'back') return renderSheet($('sheetBody').dataset.editId, $('sheetBody').dataset.occ || date);
   if (!s) return;
-  if (act === 'vol-on') { volunteer(id, true); toast(s.kind === 'appt' ? 'Great, you\'re on the list' : 'Thanks! You\'re down to cover it'); return renderSheet(id, date); }
+  if (act === 'vol-on') { volunteer(id, true); toast(s.kind === 'appt' ? 'Great, you\'re on the list' : 'Thanks! You\'re down to help'); return renderSheet(id, date); }
   if (act === 'vol-off') { volunteer(id, false); return renderSheet(id, date); }
   if (act === 'confirm') { confirmShift(id, a.dataset.who); toast(`${a.dataset.who} is confirmed`); return renderSheet(id, date); }
   if (act === 'unconfirm') { patch(id, { status: 'open', helper: '' }); return renderSheet(id, date); }
